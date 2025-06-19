@@ -339,7 +339,7 @@ export default function Chat() {
                       )}
                       
                       <Card className="bg-muted/50 border-none">
-                        <CardContent className="px-4 py-3">
+                        <CardContent className="px-3 py-2">
                           <MarkdownRenderer content={message.content} />
                         </CardContent>
                       </Card>
@@ -350,7 +350,7 @@ export default function Chat() {
                   <div className="flex gap-4 justify-end">
                     <div className="max-w-[80%] space-y-2">
                       <Card className="bg-primary text-primary-foreground w-fit ml-auto">
-                        <CardContent className="px-4 py-3">
+                        <CardContent className="px-3 py-2">
                           <div className="whitespace-pre-wrap">{message.content}</div>
                         </CardContent>
                       </Card>
@@ -376,7 +376,7 @@ export default function Chat() {
                   </Avatar>
                   <div className="flex-1 space-y-2">
                     <Card className="bg-muted/50 border-none">
-                      <CardContent className="px-4 py-3">
+                      <CardContent className="px-3 py-2">
                         <div className="flex items-center gap-2">
                           <div className="flex gap-1">
                             <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
