@@ -20,17 +20,23 @@ export function MarkdownRenderer({ content, className = '' }: MarkdownRendererPr
     setIsClient(true);
   }, []);
 
+  // O3 model now provides proper markdown formatting with developer message
+  const processContent = (rawContent: string) => {
+    // Minimal processing - O3 should provide properly formatted markdown
+    return rawContent;
+  };
+
   if (!isClient) {
-    return <div className="whitespace-pre-wrap text-gray-900">{content}</div>;
+    return <div className="whitespace-pre-wrap text-gray-900 leading-relaxed">{processContent(content)}</div>;
   }
 
   if (hasError) {
-    return <div className="whitespace-pre-wrap text-gray-900">{content}</div>;
+    return <div className="whitespace-pre-wrap text-gray-900 leading-relaxed">{processContent(content)}</div>;
   }
 
   try {
     return (
-      <div className={`prose prose-sm max-w-none ${className}`}>
+      <div className={`prose prose-sm max-w-none prose-gray ${className}`} style={{ lineHeight: '1.6' }}>
         <ReactMarkdown
           remarkPlugins={[remarkGfm, remarkMath]}
           rehypePlugins={[[rehypeKatex, { 
@@ -60,8 +66,8 @@ export function MarkdownRenderer({ content, className = '' }: MarkdownRendererPr
         h2: ({ children }) => <h2 className="text-lg font-semibold mb-2 text-gray-900">{children}</h2>,
         h3: ({ children }) => <h3 className="text-base font-medium mb-2 text-gray-900">{children}</h3>,
         
-        // Paragraphs
-        p: ({ children }) => <p className="mb-3 text-gray-800 leading-relaxed">{children}</p>,
+        // Paragraphs with better spacing
+        p: ({ children }) => <p className="mb-4 text-gray-800 leading-relaxed last:mb-0">{children}</p>,
         
         // Lists
         ul: ({ children }) => <ul className="mb-3 pl-4 space-y-1">{children}</ul>,
@@ -130,7 +136,7 @@ export function MarkdownRenderer({ content, className = '' }: MarkdownRendererPr
         em: ({ children }) => <em className="italic text-gray-800">{children}</em>,
         }}
         >
-          {content}
+          {processContent(content)}
         </ReactMarkdown>
       </div>
     );

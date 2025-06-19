@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Trash2, Paperclip, Sparkles } from 'lucide-react';
+import { Send, Bot, User, Trash2, Paperclip, Sparkles, Brain, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
@@ -42,6 +42,7 @@ export default function Chat() {
   const [isClient, setIsClient] = useState(false);
   const [responseId, setResponseId] = useState<string | null>(null);
   const [currentThinkingSteps, setCurrentThinkingSteps] = useState<ThinkingStep[]>([]);
+  const [useThinkingMode, setUseThinkingMode] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -59,6 +60,8 @@ export default function Chat() {
     if (isClient) {
       localStorage.removeItem('wealth-agent-messages');
       localStorage.removeItem('wealth-agent-response-id');
+      // Keep thinking mode preference when clearing chat
+      // localStorage.removeItem('wealth-agent-thinking-mode');
     }
   };
 
@@ -90,6 +93,12 @@ export default function Chat() {
     }
   }, [responseId, isClient]);
 
+  useEffect(() => {
+    if (isClient) {
+      localStorage.setItem('wealth-agent-thinking-mode', JSON.stringify(useThinkingMode));
+    }
+  }, [useThinkingMode, isClient]);
+
   // Load from localStorage on mount (client-side only)
   useEffect(() => {
     if (isClient) {
@@ -106,6 +115,15 @@ export default function Chat() {
       const savedResponseId = localStorage.getItem('wealth-agent-response-id');
       if (savedResponseId) {
         setResponseId(savedResponseId);
+      }
+
+      const savedThinkingMode = localStorage.getItem('wealth-agent-thinking-mode');
+      if (savedThinkingMode) {
+        try {
+          setUseThinkingMode(JSON.parse(savedThinkingMode));
+        } catch (error) {
+          console.error('Failed to load thinking mode from localStorage:', error);
+        }
       }
     }
   }, [isClient]);
@@ -160,11 +178,14 @@ export default function Chat() {
           message: input,
           responseId: responseId,
           files: uploadedFiles.map(f => f.id),
+          useThinkingMode: useThinkingMode,
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to send message');
+        const errorText = await response.text();
+        console.error('API Error:', response.status, errorText);
+        throw new Error(`Failed to send message: ${response.status} - ${errorText}`);
       }
 
       const assistantMessage: Message = {
@@ -256,8 +277,35 @@ export default function Chat() {
               <Sparkles className="w-4 h-4 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="text-lg font-semibold text-foreground">AI Financial Assistant</h1>
-              <p className="text-xs text-muted-foreground">Ready to help with your financial questions</p>
+              <div className="flex items-center gap-2">
+                <h1 className="text-lg font-semibold text-foreground">AI Financial Assistant</h1>
+                <Badge 
+                  variant={useThinkingMode ? "default" : "secondary"} 
+                  className={`text-xs ${
+                    useThinkingMode 
+                      ? 'bg-purple-100 text-purple-700 border-purple-200' 
+                      : 'bg-blue-100 text-blue-700 border-blue-200'
+                  }`}
+                >
+                  {useThinkingMode ? (
+                    <>
+                      <Brain className="w-3 h-3 mr-1" />
+                      O3 Think
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-3 h-3 mr-1" />
+                      GPT-4.1 Fast
+                    </>
+                  )}
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {useThinkingMode 
+                  ? 'Advanced reasoning mode for complex analysis' 
+                  : 'Fast response mode for quick questions'
+                }
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -448,6 +496,31 @@ export default function Chat() {
                   <Paperclip className="w-4 h-4" />
                 </Button>
               </div>
+              
+              {/* Think Mode Toggle */}
+              <Button
+                variant={useThinkingMode ? "default" : "outline"}
+                size="lg"
+                onClick={() => setUseThinkingMode(!useThinkingMode)}
+                className={`px-4 transition-all duration-200 ${
+                  useThinkingMode 
+                    ? 'bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white shadow-lg' 
+                    : 'hover:bg-purple-50 hover:border-purple-200 hover:text-purple-700'
+                }`}
+                title={useThinkingMode ? "Using O3 reasoning model" : "Using GPT-4.1 fast model"}
+              >
+                {useThinkingMode ? (
+                  <>
+                    <Brain className="w-4 h-4 mr-2" />
+                    Think
+                  </>
+                ) : (
+                  <>
+                    <Zap className="w-4 h-4 mr-2" />
+                    Fast
+                  </>
+                )}
+              </Button>
               
               <Button
                 onClick={sendMessage}

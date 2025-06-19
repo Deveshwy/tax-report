@@ -22,5 +22,5 @@ export function shouldUseO3(message: string): boolean {
 }
 
 export function getModelForMessage(message: string): string {
-  return shouldUseO3(message) ? 'o3-mini' : 'gpt-4.1';
+  return shouldUseO3(message) ? 'o3' : 'gpt-4.1';
 }
