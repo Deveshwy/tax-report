@@ -321,52 +321,48 @@ export default function Chat() {
 
             {messages.map((message) => (
               <div key={message.id} className="mb-6">
-                <div className="flex gap-4">
-                  {/* Avatar */}
-                  <Avatar className="w-8 h-8 flex-shrink-0">
-                    <AvatarFallback className={`${
-                      message.role === 'assistant' 
-                        ? 'bg-primary text-primary-foreground' 
-                        : 'bg-muted text-muted-foreground'
-                    }`}>
-                      {message.role === 'assistant' ? (
+                {message.role === 'assistant' ? (
+                  // Assistant messages: Left-aligned with avatar, full width available
+                  <div className="flex gap-4">
+                    <Avatar className="w-8 h-8 flex-shrink-0">
+                      <AvatarFallback className="bg-primary text-primary-foreground">
                         <Bot className="w-4 h-4" />
-                      ) : (
-                        <User className="w-4 h-4" />
+                      </AvatarFallback>
+                    </Avatar>
+                    
+                    <div className="flex-1 min-w-0 space-y-2">
+                      {/* Show thinking process for assistant messages */}
+                      {message.thinkingSteps && message.thinkingSteps.length > 0 && (
+                        <div className="mb-3">
+                          <ThinkingProcess steps={message.thinkingSteps} />
+                        </div>
                       )}
-                    </AvatarFallback>
-                  </Avatar>
-                  
-                  {/* Content */}
-                  <div className="flex-1 min-w-0 space-y-2">
-                    {/* Show thinking process for assistant messages */}
-                    {message.role === 'assistant' && message.thinkingSteps && message.thinkingSteps.length > 0 && (
-                      <div className="mb-3">
-                        <ThinkingProcess steps={message.thinkingSteps} />
-                      </div>
-                    )}
-                    
-                    <Card className={`${
-                      message.role === 'assistant' 
-                        ? 'bg-muted/50 border-none' 
-                        : 'bg-primary text-primary-foreground'
-                    }`}>
-                      <CardContent className="p-4">
-                        {message.role === 'assistant' ? (
+                      
+                      <Card className="bg-muted/50 border-none">
+                        <CardContent className="px-4 py-3">
                           <MarkdownRenderer content={message.content} />
-                        ) : (
-                          <div className="whitespace-pre-wrap">{message.content}</div>
-                        )}
-                      </CardContent>
-                    </Card>
-                    
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-xs">
-                        {message.timestamp.toLocaleTimeString()}
-                      </Badge>
+                        </CardContent>
+                      </Card>
                     </div>
                   </div>
-                </div>
+                ) : (
+                  // User messages: Right-aligned with adaptive width
+                  <div className="flex gap-4 justify-end">
+                    <div className="max-w-[80%] space-y-2">
+                      <Card className="bg-primary text-primary-foreground w-fit ml-auto">
+                        <CardContent className="px-4 py-3">
+                          <div className="whitespace-pre-wrap">{message.content}</div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                    
+                    <Avatar className="w-8 h-8 flex-shrink-0">
+                      <AvatarFallback className="bg-muted text-muted-foreground">
+                        <User className="w-4 h-4" />
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
+                )}
               </div>
             ))}
         
@@ -380,7 +376,7 @@ export default function Chat() {
                   </Avatar>
                   <div className="flex-1 space-y-2">
                     <Card className="bg-muted/50 border-none">
-                      <CardContent className="p-4">
+                      <CardContent className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <div className="flex gap-1">
                             <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
