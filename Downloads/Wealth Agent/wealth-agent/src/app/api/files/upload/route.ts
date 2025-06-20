@@ -1,9 +1,17 @@
 import { openai } from '@/lib/openai';
-import { addFileToVectorStore } from '@/lib/vector-store';
+import { addFileToUserVectorStore } from '@/lib/vector-store';
+import { auth } from '@clerk/nextjs/server';
 import { NextRequest } from 'next/server';
 
 export async function POST(req: NextRequest) {
   try {
+    // Authenticate the user
+    const { userId } = await auth();
+    
+    if (!userId) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const formData = await req.formData();
     const file = formData.get('file') as File;
 
@@ -36,8 +44,8 @@ export async function POST(req: NextRequest) {
       purpose: 'assistants',
     });
 
-    // Add file to vector store for file search
-    await addFileToVectorStore(uploadedFile.id);
+    // Add file to user-specific vector store for file search
+    await addFileToUserVectorStore(userId, uploadedFile.id);
 
     return Response.json({
       id: uploadedFile.id,

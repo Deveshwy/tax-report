@@ -1,11 +1,21 @@
-import { openai, getModelForMessage } from '@/lib/openai';
-import { getVectorStoreId, getCourseVectorStoreId } from '@/lib/vector-store';
+import { openai } from '@/lib/openai';
+import { getVectorStoreId, getCourseVectorStoreId, getUserVectorStoreId } from '@/lib/vector-store';
+import { 
+  createUser, 
+  getUser, 
+  createConversation, 
+  saveMessage, 
+  updateConversationResponseId,
+  generateConversationTitle
+} from '@/lib/supabase';
+import { auth } from '@clerk/nextjs/server';
 import { NextRequest } from 'next/server';
 
 // Handle O3 model streaming (Chat Completions API)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function handleO3Streaming(response: any) {
+async function handleO3Streaming(response: any, conversationId: string, userId: string) {
   const encoder = new TextEncoder();
+  let assistantContent = ''; // Accumulate the assistant's response
   
   const stream = new ReadableStream({
     async start(controller) {
@@ -55,6 +65,7 @@ async function handleO3Streaming(response: any) {
           const content = chunk.choices?.[0]?.delta?.content || '';
           if (content) {
             console.log('Streaming content chunk:', JSON.stringify(content));
+            assistantContent += content; // Accumulate content for database save
             // O3 now provides proper markdown formatting with developer message
             safeEnqueue(encoder.encode(content));
           }
@@ -73,6 +84,15 @@ async function handleO3Streaming(response: any) {
         safeEnqueue(encoder.encode('\n\nSorry, I encountered an error while processing your request. Please try again.'));
         safeError(error);
       } finally {
+        // Save the assistant message to database if we have content
+        if (assistantContent.trim()) {
+          try {
+            await saveMessage(conversationId, 'assistant', assistantContent, userId);
+            console.log('Assistant message saved to database');
+          } catch (error) {
+            console.error('Error saving assistant message:', error);
+          }
+        }
         safeClose();
       }
     },
@@ -92,11 +112,42 @@ async function handleO3Streaming(response: any) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { message, responseId, files, useThinkingMode } = await req.json();
+    // Authenticate the user
+    const { userId } = await auth();
+    
+    if (!userId) {
+      return new Response('Unauthorized', { status: 401 });
+    }
+
+    const { message, responseId, files, useThinkingMode, conversationId } = await req.json();
 
     if (!message) {
       return new Response('Message is required', { status: 400 });
     }
+
+    // Ensure user exists in database
+    try {
+      await getUser(userId);
+    } catch (error) {
+      // User doesn't exist, create them with a default access expiration
+      const accessExpiresAt = new Date();
+      accessExpiresAt.setFullYear(accessExpiresAt.getFullYear() + 1); // 1 year access
+      
+      await createUser(userId, 'user@example.com', accessExpiresAt);
+    }
+
+    // Handle conversation management
+    let currentConversationId = conversationId;
+    
+    // If no conversation ID provided, create a new conversation
+    if (!currentConversationId) {
+      const title = generateConversationTitle(message);
+      const conversation = await createConversation(userId, title);
+      currentConversationId = conversation.id;
+    }
+
+    // Save the user message to the database
+    await saveMessage(currentConversationId, 'user', message, userId, files);
 
     // Use manual model selection - O3 for thinking mode, GPT-4.1 for fast mode
     const model = useThinkingMode ? 'o3' : 'gpt-4.1';
@@ -153,7 +204,7 @@ When you perform calculations, show your work clearly with proper mathematical n
         const response = await openai.chat.completions.create(chatParams);
         console.log('O3 response object created');
         
-        return await handleO3Streaming(response);
+        return await handleO3Streaming(response, currentConversationId, userId);
       } catch (error) {
         console.error('O3 API Error:', error);
         return new Response(JSON.stringify({ 
@@ -197,8 +248,8 @@ IMPORTANT FORMATTING RULES:
 When you perform calculations, show your work clearly with proper mathematical notation. When you reference information from uploaded files, cite the specific source. Always aim to provide practical, implementable financial advice.`
     };
 
-    // Add file search tool - always include course content + any user files
-    const userVectorStoreId = getVectorStoreId();
+    // Add file search tool - always include course content + user-specific files
+    const userVectorStoreId = await getUserVectorStoreId(userId);
     const courseVectorStoreId = getCourseVectorStoreId();
     const tools = [];
     
@@ -220,7 +271,7 @@ When you perform calculations, show your work clearly with proper mathematical n
     }
     
     // Add hosted tools only for compatible models (not O3)
-    if (model !== 'o3-mini') {
+    if (model !== 'o3') {
       // Add web search for current financial information
       tools.push({
         type: "web_search_preview",
@@ -250,6 +301,8 @@ When you perform calculations, show your work clearly with proper mathematical n
     // Create a ReadableStream to handle streaming response
     const encoder = new TextEncoder();
     const assistantThinkingSteps: Array<{ tool: string; status: string; timestamp: number; query?: string }> = [];
+    let assistantContent = ''; // Accumulate the assistant's response
+    let responseId = '';
     
     const stream = new ReadableStream({
       async start(controller) {

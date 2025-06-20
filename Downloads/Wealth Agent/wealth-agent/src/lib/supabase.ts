@@ -63,3 +63,94 @@ export async function updateUserAccess(clerkId: string, accessExpiresAt: Date) {
 
   return data;
 }
+
+// Conversation management functions
+export async function createConversation(clerkId: string, title?: string, openaiResponseId?: string) {
+  const user = await getUser(clerkId);
+  
+  const { data, error } = await supabase
+    .from('conversations')
+    .insert({
+      user_id: user.id,
+      title,
+      openai_response_id: openaiResponseId,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    })
+    .select()
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+export async function getConversations(clerkId: string) {
+  const user = await getUser(clerkId);
+  
+  const { data, error } = await supabase
+    .from('conversations')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('updated_at', { ascending: false });
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+export async function updateConversation(conversationId: string, updates: { title?: string; openai_response_id?: string }) {
+  const { data, error } = await supabase
+    .from('conversations')
+    .update({
+      ...updates,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', conversationId)
+    .select()
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+export async function addMessage(conversationId: string, role: 'user' | 'assistant', content: string, filesAttached?: string[]) {
+  const { data, error } = await supabase
+    .from('messages')
+    .insert({
+      conversation_id: conversationId,
+      role,
+      content,
+      files_attached: filesAttached || [],
+      created_at: new Date().toISOString()
+    })
+    .select()
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+export async function getMessages(conversationId: string) {
+  const { data, error } = await supabase
+    .from('messages')
+    .select('*')
+    .eq('conversation_id', conversationId)
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
