@@ -4,52 +4,64 @@ import { useEffect, useState } from 'react';
 
 const financeTips = [
   {
-    title: "Tax-Deductible Expenses",
-    content: "Keep track of business expenses, home office costs, and professional development. These can significantly reduce your taxable income."
+    title: "Adjust Your W-4 NOW",
+    content: "If you got a huge refund last year, you're giving the IRS an interest-free loan. Fix it so you have more cash flow monthly instead of waiting for April."
   },
   {
-    title: "Retirement Contributions",
-    content: "Maximize your 401(k) or IRA contributions. Not only do they secure your future, but they also lower your current tax bill."
+    title: "Track Every Mile",
+    content: "Business mileage is worth 67¢/mile in 2024. Use MileIQ or similar apps to auto-track. Even 10,000 business miles = $6,700 deduction."
   },
   {
-    title: "Health Savings Account (HSA)",
-    content: "HSAs offer a triple tax advantage: tax-deductible contributions, tax-free growth, and tax-free withdrawals for medical expenses."
+    title: "Max Your HSA Triple Tax Advantage",
+    content: "Contributions are pre-tax, growth is tax-free, and withdrawals for medical expenses are tax-free. It's better than a 401(k) for medical costs."
   },
   {
-    title: "Tax Loss Harvesting",
-    content: "Sell investments at a loss to offset capital gains. You can deduct up to $3,000 in losses against ordinary income annually."
+    title: "Start a Side Hustle for Instant Write-Offs",
+    content: "Even a small business lets you deduct home office, equipment, software, and more. Turn hobbies into tax-saving machines."
   },
   {
-    title: "Charitable Contributions",
-    content: "Donate to qualified charities to get deductions. Keep receipts and documentation for all charitable giving over $250."
+    title: "Pay Estimated Taxes Quarterly",
+    content: "If self-employed, avoid penalties by paying in April, June, September, and January. Set aside 25-30% of each payment you receive."
   },
   {
-    title: "Education Credits",
-    content: "The American Opportunity Credit offers up to $2,500 per student for qualified education expenses."
+    title: "Bunch Charitable Donations",
+    content: "Instead of $5K/year, donate $15K every three years to exceed the standard deduction threshold and itemize."
   },
   {
-    title: "Home Office Deduction",
-    content: "If you work from home, you may deduct a portion of housing expenses. Track your home office space carefully."
+    title: "Hire Your Kids",
+    content: "Pay them up to $14,600 tax-free through your business. They get income, you get a deduction, and it teaches them about money."
   },
   {
-    title: "Quarterly Estimated Taxes",
-    content: "Self-employed? Pay quarterly estimated taxes to avoid underpayment penalties and manage cash flow better."
+    title: "Convert to S-Corp at $50K+ Profit",
+    content: "Save thousands on self-employment taxes by taking a reasonable salary and distributions instead of all W-2 income."
   },
   {
-    title: "Bunching Deductions",
-    content: "Consider 'bunching' deductible expenses in one year to exceed the standard deduction threshold."
+    title: "Use Section 179 for Big Equipment",
+    content: "Deduct up to $1.16M on equipment purchases in the year you buy them instead of depreciating over years."
   },
   {
-    title: "Energy-Efficient Improvements",
-    content: "Install solar panels or energy-efficient windows. Many green home improvements offer substantial tax credits."
+    title: "Claim the Home Office Deduction",
+    content: "If legitimate, exclusive regular use = deduction. Simplified method = $5/sq ft up to 300 sq ft = easy $1,500 deduction."
   },
   {
-    title: "Record Keeping",
-    content: "Maintain organized records for all income and expenses. Good documentation is your best defense in case of an audit."
+    title: "Deduct Health Insurance Premiums",
+    content: "If you're self-employed, your health insurance premiums are 100% deductible above-the-line."
   },
   {
-    title: "Tax-Advantaged Accounts",
-    content: "Utilize 529 plans for education, FSA for healthcare, and employer benefits to maximize tax efficiency."
+    title: "Keep Receipts for EVERYTHING",
+    content: "The IRS can disallow deductions without proof. Use apps like Expensify or QuickBooks to snap and categorize receipts monthly."
+  },
+  {
+    title: "Backdoor Roth Contributions",
+    content: "If your income is too high for a Roth IRA, contribute to a traditional IRA, then convert it. Legal workaround for high earners."
+  },
+  {
+    title: "Pay Q4 Estimated Taxes in December",
+    content: "Make your January 15th payment early in December to deduct it in the current tax year and lower your bill now."
+  },
+  {
+    title: "Review Your Strategy Annually",
+    content: "What worked at $50K income doesn't work at $200K. Revisit your entity structure, deductions, and retirement contributions every year."
   }
 ];
 
@@ -289,7 +301,7 @@ export default function Loading() {
           <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <span>Estimated time: 2-3 minutes</span>
+          <span>Estimated time: 2 minutes</span>
         </div>
 
         {/* Subtle loading indicator */}
