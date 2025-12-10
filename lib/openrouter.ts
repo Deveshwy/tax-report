@@ -1,18 +1,31 @@
-import OpenAI from 'openai';
+let openrouter: any = null;
 
-const openrouter = new OpenAI({
-  apiKey: process.env.OPENROUTER_API_KEY,
-  baseURL: 'https://openrouter.ai/api/v1',
-  defaultHeaders: {
-    'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-    'X-Title': 'Tax Strategy Report Generator',
-  },
-  dangerouslyAllowBrowser: false, // Ensure API calls are server-side only
-});
+async function getOpenRouterClient() {
+  if (!openrouter) {
+    if (!process.env.OPENROUTER_API_KEY) {
+      throw new Error('OPENROUTER_API_KEY environment variable is not set');
+    }
+
+    // Dynamic import to prevent build-time errors
+    const { default: OpenAI } = await import('openai');
+
+    openrouter = new OpenAI({
+      apiKey: process.env.OPENROUTER_API_KEY,
+      baseURL: 'https://openrouter.ai/api/v1',
+      defaultHeaders: {
+        'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+        'X-Title': 'Tax Strategy Report Generator',
+      },
+      dangerouslyAllowBrowser: false, // Ensure API calls are server-side only
+    });
+  }
+  return openrouter;
+}
 
 // Helper function to create completion (simplified since Grok doesn't need provider routing)
 async function createCompletionWithProvider(params: any) {
-  return await openrouter.chat.completions.create(params);
+  const client = await getOpenRouterClient();
+  return await client.chat.completions.create(params);
 }
 
 export async function generateTaxReport(userData: {
