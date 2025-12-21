@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Question, QuizResponses } from '@/types/quiz';
 
 const questions: Question[] = [
@@ -20,17 +20,11 @@ const questions: Question[] = [
   },
   {
     id: 'q1',
-    question: 'What is your total annual household income?',
-    type: 'select',
+    question: 'Approximate total household income last year',
+    type: 'number',
     required: true,
-    options: [
-      'Under $75,000',
-      '$75,000 - $150,000',
-      '$150,000 - $250,000',
-      '$250,000 - $400,000',
-      '$400,000 - $750,000',
-      '$750,000+'
-    ]
+    placeholder: 'Enter amount (e.g., 125000)',
+    helperText: 'Round to the nearest $5,000'
   },
   {
     id: 'q2',
@@ -79,6 +73,18 @@ const questions: Question[] = [
     ]
   },
   {
+    id: 'q4a',
+    question: 'Approximately how much NET PROFIT does your business generate annually?',
+    type: 'number',
+    required: true,
+    placeholder: 'Enter net profit amount (e.g., 75000)',
+    helperText: 'Round to the nearest $5,000',
+    condition: {
+      field: 'q3',
+      values: ['Self-employed / Freelancer / 1099 Contractor', 'Business owner (LLC, S-Corp, or C-Corp)', 'Real estate investor']
+    }
+  },
+  {
     id: 'q5',
     question: 'Do you currently use any of these tax strategies? (Select all that apply)',
     type: 'multiselect',
@@ -108,13 +114,14 @@ const questions: Question[] = [
   },
   {
     id: 'q7',
-    question: 'Do you own your home?',
+    question: 'Which of these best describes your homeownership situation?',
     type: 'select',
     required: true,
     options: [
-      'Yes, I own my home',
-      'No, I rent',
-      'Other (vacation home only, etc.)'
+      'Primary residence only',
+      'Second home only',
+      'Both primary and second home',
+      'None'
     ]
   },
   {
@@ -128,6 +135,22 @@ const questions: Question[] = [
       'No, not interested in real estate',
       'I own commercial property'
     ]
+  },
+  {
+    id: 'q8a',
+    question: 'How many rental units do you own?',
+    type: 'select',
+    required: true,
+    options: [
+      '1 unit',
+      '2-5 units',
+      '6-10 units',
+      '10+ units'
+    ],
+    condition: {
+      field: 'q8',
+      values: ['Yes, I currently own rental property']
+    }
   },
   {
     id: 'q9',
@@ -180,7 +203,31 @@ export default function Quiz() {
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [isAnimating, setIsAnimating] = useState(false);
 
-  const q = questions[currentQuestion] || questions[0];
+  // Filter questions based on conditions
+  const getVisibleQuestions = () => {
+    return questions.filter(q => {
+      if (!q.condition) return true;
+
+      const conditionValue = answers[q.condition.field];
+      if (!conditionValue) return false;
+
+      if (Array.isArray(conditionValue)) {
+        return q.condition.values.some(v => conditionValue.includes(v));
+      }
+
+      return q.condition.values.includes(conditionValue);
+    });
+  };
+
+  const visibleQuestions = getVisibleQuestions();
+  const q = visibleQuestions[currentQuestion] || visibleQuestions[0];
+
+  // Reset current question if it goes out of bounds when conditions change
+  useEffect(() => {
+    if (currentQuestion >= visibleQuestions.length && visibleQuestions.length > 0) {
+      setCurrentQuestion(visibleQuestions.length - 1);
+    }
+  }, [currentQuestion, visibleQuestions]);
 
   const handleAnswer = (questionId: string, value: any) => {
     setAnswers(prev => ({ ...prev, [questionId]: value }));
@@ -196,12 +243,12 @@ export default function Quiz() {
   };
 
   const handleNext = () => {
-    if (currentQuestion < questions.length - 1) {
+    if (currentQuestion < visibleQuestions.length - 1) {
       setIsAnimating(true);
       setTimeout(() => {
         setCurrentQuestion(prev => {
           const next = prev + 1;
-          return next < questions.length ? next : prev;
+          return next < visibleQuestions.length ? next : prev;
         });
         setIsAnimating(false);
       }, 300);
@@ -232,14 +279,16 @@ export default function Quiz() {
 
     // Prepare responses for API
     const responses: QuizResponses = {
-      q1: answers.q1,
+      q1: typeof answers.q1 === 'string' ? parseInt(answers.q1) || 0 : (answers.q1 || 0),
       q2: answers.q2,
       q3: answers.q3 || [],
       q4: answers.q4,
+      q4a: answers.q4a ? (typeof answers.q4a === 'string' ? parseInt(answers.q4a) : answers.q4a) : undefined,
       q5: answers.q5 || [],
       q6: answers.q6,
       q7: answers.q7,
       q8: answers.q8,
+      q8a: answers.q8a,
       q9: answers.q9,
       q10: answers.q10,
       q11: answers.q11,
@@ -265,12 +314,18 @@ export default function Quiz() {
       if (q.type === 'multiselect') {
         return answer && answer.length > 0;
       }
+      if (q.type === 'number') {
+        // Answer can be string (while typing) or number (after blur)
+        if (!answer || answer === '') return false;
+        const numValue = typeof answer === 'string' ? parseInt(answer) : answer;
+        return !isNaN(numValue) && numValue >= 1000 && numValue <= 10000000;
+      }
       return answer && answer !== '';
     }
     return true;
   };
 
-  const progress = ((currentQuestion + 1) / questions.length) * 100;
+  const progress = ((currentQuestion + 1) / visibleQuestions.length) * 100;
 
   // Handle Enter key press
   // For text inputs, we'll handle Enter key separately
@@ -282,7 +337,7 @@ export default function Quiz() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-gray-600">
-              Question {currentQuestion + 1} of {questions.length}
+              Question {currentQuestion + 1} of {visibleQuestions.length}
             </span>
             <span className="text-sm font-medium text-gray-600">
               {Math.round(progress)}%
@@ -366,8 +421,61 @@ export default function Quiz() {
                 }
               }}
               placeholder={q.placeholder || 'Enter your answer'}
-              className="w-full p-4 border-2 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+              className="w-full p-4 border-2 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-black"
             />
+          )}
+
+          {q.type === 'number' && (
+            <div>
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={answers[q.id] ? answers[q.id].toString() : ''}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // Allow empty string or numbers only
+                  if (value === '' || /^\d+$/.test(value)) {
+                    // Store as string while typing, convert to number on blur or submit
+                    handleAnswer(q.id, value);
+                  }
+                }}
+                onBlur={(e) => {
+                  const value = e.target.value;
+                  if (value && /^\d+$/.test(value)) {
+                    const numValue = parseInt(value);
+                    // Only validate range on blur
+                    if (numValue >= 1000 && numValue <= 10000000) {
+                      handleAnswer(q.id, numValue);
+                    } else {
+                      // Show error feedback
+                      alert('Please enter an amount between $1,000 and $10,000,000');
+                      handleAnswer(q.id, '');
+                    }
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && isCurrentQuestionAnswered()) {
+                    e.preventDefault();
+                    // Trigger blur to validate
+                    e.currentTarget.blur();
+                    if (isCurrentQuestionAnswered()) {
+                      handleNext();
+                    }
+                  }
+                }}
+                placeholder={q.placeholder || 'Enter amount'}
+                className="w-full p-4 border-2 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-black"
+              />
+              {q.helperText && (
+                <p className="text-sm text-gray-500 mt-2">{q.helperText}</p>
+              )}
+              {answers[q.id] && answers[q.id] !== '' && (
+                <p className="text-sm text-gray-600 mt-1 font-medium">
+                  Formatted: ${new Intl.NumberFormat('en-US').format(parseInt(answers[q.id]))}
+                </p>
+              )}
+            </div>
           )}
 
           {/* Navigation Buttons */}
@@ -384,7 +492,7 @@ export default function Quiz() {
               disabled={!isCurrentQuestionAnswered()}
               className="px-8 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:scale-105"
             >
-              {currentQuestion === questions.length - 1 ? 'Generate My Report' : 'Next →'}
+              {currentQuestion === visibleQuestions.length - 1 ? 'Generate My Report' : 'Next →'}
             </button>
           </div>
         </div>

@@ -23,3 +23,30 @@ body {
   color: rgb(var(--foreground));
   background: linear-gradient(to bottom, #f8fafc, #f1f5f9);
 }
+
+/* Override browser autofill styling */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px white inset !important;
+  -webkit-text-fill-color: black !important;
+  background-color: white !important;
+  background-image: none !important;
+  transition: background-color 5000s ease-in-out 0s !important;
+}
+
+input {
+  color: black !important;
+  background-color: white !important;
+}
+
+/* Ensure text is black in all input states */
+input::placeholder {
+  color: #9ca3af !important;
+}
+
+input:focus {
+  color: black !important;
+  background-color: white !important;
+}
